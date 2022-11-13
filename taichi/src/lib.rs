@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+use std::ffi::{CString};
 use std::{rc::Rc};
 use std::marker::PhantomData;
 
@@ -60,6 +62,19 @@ impl Runtime {
     pub fn allocate_ndarray<T>(&self) -> NdArrayBuilder<'_, T> {
         NdArrayBuilder::<T>::new(self)
     }
+
+    pub fn load_aot_module(&self, module_dir: &str) -> Result<AotModule> {
+        AotModule::new(self, module_dir)
+    }
+
+    pub fn wait(&self) -> Result<()> {
+        unsafe {
+            ti_wait(self.0.runtime);
+        }
+        check_taichi_error()?;
+        Ok(())
+    }
+
 }
 
 pub struct MemoryBuilder<'a> {
@@ -134,7 +149,7 @@ pub struct Memory(Rc<Memory_>);
 impl Memory {
     fn new(runtime: &Runtime, allocate_info: &TiMemoryAllocateInfo) -> Result<Memory> {
         let out = Memory_::new(runtime, allocate_info)?;
-        Ok(Memory(Rc::new(out), ))
+        Ok(Memory(Rc::new(out)))
     }
 
     pub fn map<T>(&self) -> Result<MappedMemory<'_, T>> {
@@ -377,6 +392,131 @@ impl<T> NdArray<T> {
     }
 }
 
+struct AotModule_ {
+    runtime: Rc<Runtime_>,
+    module: TiAotModule,
+}
+impl AotModule_ {
+    pub fn new(runtime: &Runtime, module_dir: &str) -> Result<AotModule_> {
+        let module_dir = CString::new(module_dir)
+            .map_err(|_| TiError::InvalidArgument)?;
+        let module = unsafe {
+            ti_load_aot_module(runtime.runtime(), module_dir.as_ptr())
+        };
+        check_taichi_error()?;
+        Ok(AotModule_ { runtime: runtime.0.clone(), module })
+    }
+}
+impl Drop for AotModule_ {
+    fn drop(&mut self) {
+        unsafe {
+            ti_destroy_aot_module(self.module);
+        }
+    }
+}
+
+pub struct AotModule(Rc<AotModule_>);
+impl AotModule {
+    fn new(runtime: &Runtime, module_dir: &str) -> Result<AotModule> {
+        let out = AotModule_::new(runtime, module_dir)?;
+        Ok(AotModule(Rc::new(out)))
+    }
+
+    pub fn get_compute_graph(&self, name: &str) -> Result<ComputeGraph> {
+        ComputeGraph::new(self, name)
+    }
+
+    pub fn aot_module(&self) -> TiAotModule {
+        self.0.module
+    }
+}
+
+
+struct ComputeGraph_ {
+    aot_module: Rc<AotModule_>,
+    compute_graph: TiComputeGraph,
+}
+impl ComputeGraph_ {
+    fn new(aot_module: &AotModule, name: &str) -> Result<ComputeGraph_> {
+        let name = CString::new(name)
+            .map_err(|_| TiError::InvalidArgument)?;
+        let compute_graph = unsafe {
+            ti_get_aot_module_compute_graph(aot_module.aot_module(), name.as_ptr())
+        };
+        check_taichi_error()?;
+        Ok(ComputeGraph_ { aot_module: aot_module.0.clone(), compute_graph })
+    }
+}
+
+pub struct ComputeGraph {
+    compute_graph: Rc<ComputeGraph_>,
+    args: HashMap<CString, TiArgument>,
+}
+impl ComputeGraph {
+    pub fn new(aot_module: &AotModule, name: &str) -> Result<ComputeGraph> {
+        let out = ComputeGraph_::new(aot_module, name)?;
+        Ok(ComputeGraph { compute_graph: Rc::new(out), args: Default::default() })
+    }
+
+    pub fn set_arg_i32(&mut self, name: &str, value: i32) -> Result<&mut Self> {
+        let name = CString::new(name)
+            .map_err(|_| TiError::InvalidArgument)?;
+        let arg = TiArgument {
+            r#type: TiArgumentType::I32,
+            value: TiArgumentValue {
+                r#i32: value,
+            },
+        };
+        self.args.insert(name, arg);
+        Ok(self)
+    }
+    pub fn set_arg_f32(&mut self, name: &str, value: f32) -> Result<&mut Self> {
+        let name = CString::new(name)
+            .map_err(|_| TiError::InvalidArgument)?;
+        let arg = TiArgument {
+            r#type: TiArgumentType::F32,
+            value: TiArgumentValue {
+                r#f32: value,
+            },
+        };
+        self.args.insert(name, arg);
+        Ok(self)
+    }
+    pub fn set_arg_ndarray<T>(&mut self, name: &str, value: &NdArray<T>) -> Result<&mut Self> {
+        let name = CString::new(name)
+            .map_err(|_| TiError::InvalidArgument)?;
+        let arg = TiArgument {
+            r#type: TiArgumentType::Ndarray,
+            value: TiArgumentValue {
+                ndarray: value.ndarray().clone(),
+            },
+        };
+        self.args.insert(name, arg);
+        Ok(self)
+    }
+
+    pub fn launch(&self) -> Result<()> {
+        let mut args = Vec::with_capacity(self.args.len());
+
+        for (name, argument) in self.args.iter() {
+            let arg = TiNamedArgument {
+                name: name.as_ptr(),
+                argument: argument.clone(),
+            };
+            args.push(arg);
+        }
+
+        let runtime = self.compute_graph.aot_module.runtime.runtime;
+        let compute_graph = self.compute_graph.compute_graph;
+        unsafe {
+            ti_launch_compute_graph(runtime, compute_graph, args.len() as u32, args.as_ptr());
+        }
+        check_taichi_error()?;
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -417,4 +557,30 @@ mod tests {
         ndarray.read(&mut output).unwrap();
         assert_eq!(input, output);
     }
+    #[test]
+    fn test_load_aot_module() {
+        let runtime = Runtime::new(TiArch::Vulkan).unwrap();
+        let ndarray = runtime.allocate_ndarray::<i32>()
+            .shape([16, 16])
+            .host_read(true)
+            .build()
+            .unwrap();
+        let module = runtime.load_aot_module("../tmp/module").unwrap();
+        let mut g_run = module.get_compute_graph("g_run").unwrap();
+        g_run.set_arg_ndarray("arr", &ndarray).unwrap();
+        g_run.launch().unwrap();
+        runtime.wait().unwrap();
+
+        let mut expect_data = Vec::new();
+        for i in 0..16 {
+            for j in 0..16 {
+                let x = (j * (16 + 1) + i) % 2;
+                expect_data.push(x);
+            }
+        }
+        let mut actual_data = [0; 16 * 16].to_vec();
+        ndarray.read(&mut actual_data).unwrap();
+        assert_eq!(expect_data, actual_data);
+    }
+
 }
