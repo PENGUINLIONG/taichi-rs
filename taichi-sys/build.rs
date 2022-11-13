@@ -2,7 +2,7 @@ use std::{env, fs, path};
 use dotenvy::dotenv;
 
 fn main() {
-    dotenv().unwrap();
+    let _ = dotenv();
 
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
 
