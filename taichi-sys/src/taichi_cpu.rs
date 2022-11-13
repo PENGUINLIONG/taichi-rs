@@ -6,8 +6,8 @@ use crate::taichi_core::*;
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiCpuMemoryInteropInfo {
-  ptr: *mut c_void,
-  size: u64,
+  pub ptr: *mut c_void,
+  pub size: u64,
 }
 
 // function.export_cpu_memory

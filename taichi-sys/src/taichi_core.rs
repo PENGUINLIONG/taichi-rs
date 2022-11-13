@@ -18,47 +18,87 @@ pub const TI_NULL_HANDLE: u32 = 0;
 
 // handle.runtime
 #[repr(transparent)]
-#[derive(Clone, Copy)]
-pub struct TiRuntime(usize);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TiRuntime(pub usize);
+impl TiRuntime {
+    pub fn null() -> Self {
+        TiRuntime(0)
+    }
+}
 
 // handle.aot_module
 #[repr(transparent)]
-#[derive(Clone, Copy)]
-pub struct TiAotModule(usize);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TiAotModule(pub usize);
+impl TiAotModule {
+    pub fn null() -> Self {
+        TiAotModule(0)
+    }
+}
 
 // handle.event
 #[repr(transparent)]
-#[derive(Clone, Copy)]
-pub struct TiEvent(usize);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TiEvent(pub usize);
+impl TiEvent {
+    pub fn null() -> Self {
+        TiEvent(0)
+    }
+}
 
 // handle.memory
 #[repr(transparent)]
-#[derive(Clone, Copy)]
-pub struct TiMemory(usize);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TiMemory(pub usize);
+impl TiMemory {
+    pub fn null() -> Self {
+        TiMemory(0)
+    }
+}
 
 // handle.image
 #[repr(transparent)]
-#[derive(Clone, Copy)]
-pub struct TiImage(usize);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TiImage(pub usize);
+impl TiImage {
+    pub fn null() -> Self {
+        TiImage(0)
+    }
+}
 
 // handle.sampler
 #[repr(transparent)]
-#[derive(Clone, Copy)]
-pub struct TiSampler(usize);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TiSampler(pub usize);
+impl TiSampler {
+    pub fn null() -> Self {
+        TiSampler(0)
+    }
+}
 
 // handle.kernel
 #[repr(transparent)]
-#[derive(Clone, Copy)]
-pub struct TiKernel(usize);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TiKernel(pub usize);
+impl TiKernel {
+    pub fn null() -> Self {
+        TiKernel(0)
+    }
+}
 
 // handle.compute_graph
 #[repr(transparent)]
-#[derive(Clone, Copy)]
-pub struct TiComputeGraph(usize);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TiComputeGraph(pub usize);
+impl TiComputeGraph {
+    pub fn null() -> Self {
+        TiComputeGraph(0)
+    }
+}
 
 // enumeration.error
 #[repr(i32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiError {
   Truncated = 1,
   Success = 0,
@@ -75,7 +115,7 @@ pub enum TiError {
 
 // enumeration.arch
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiArch {
   X64 = 0,
   Arm64 = 1,
@@ -94,7 +134,7 @@ pub enum TiArch {
 
 // enumeration.capability
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiCapability {
   SpirvVersion = 0,
   SpirvHasInt8 = 1,
@@ -126,13 +166,13 @@ pub enum TiCapability {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiCapabilityLevelInfo {
-  capability: TiCapability,
-  level: u32,
+  pub capability: TiCapability,
+  pub level: u32,
 }
 
 // enumeration.data_type
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiDataType {
   F16 = 0,
   F32 = 1,
@@ -152,7 +192,7 @@ pub enum TiDataType {
 
 // enumeration.argument_type
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiArgumentType {
   I32 = 0,
   F32 = 1,
@@ -174,38 +214,38 @@ pub struct TiMemoryUsageFlags: u32 {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiMemoryAllocateInfo {
-  size: u64,
-  host_write: TiBool,
-  host_read: TiBool,
-  export_sharing: TiBool,
-  usage: TiMemoryUsageFlags,
+  pub size: u64,
+  pub host_write: TiBool,
+  pub host_read: TiBool,
+  pub export_sharing: TiBool,
+  pub usage: TiMemoryUsageFlags,
 }
 
 // structure.memory_slice
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiMemorySlice {
-  memory: TiMemory,
-  offset: u64,
-  size: u64,
+  pub memory: TiMemory,
+  pub offset: u64,
+  pub size: u64,
 }
 
 // structure.nd_shape
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiNdShape {
-  dim_count: u32,
-  dims: [u32; 16],
+  pub dim_count: u32,
+  pub dims: [u32; 16],
 }
 
 // structure.nd_array
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiNdArray {
-  memory: TiMemory,
-  shape: TiNdShape,
-  elem_shape: TiNdShape,
-  elem_type: TiDataType,
+  pub memory: TiMemory,
+  pub shape: TiNdShape,
+  pub elem_shape: TiNdShape,
+  pub elem_type: TiDataType,
 }
 
 // bit_field.image_usage
@@ -219,7 +259,7 @@ pub struct TiImageUsageFlags: u32 {
 
 // enumeration.image_dimension
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiImageDimension {
   D1D = 0,
   D2D = 1,
@@ -231,7 +271,7 @@ pub enum TiImageDimension {
 
 // enumeration.image_layout
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiImageLayout {
   Undefined = 0,
   ShaderRead = 1,
@@ -248,7 +288,7 @@ pub enum TiImageLayout {
 
 // enumeration.format
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiFormat {
   Unknown = 0,
   R8 = 1,
@@ -300,47 +340,47 @@ pub enum TiFormat {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiImageOffset {
-  x: u32,
-  y: u32,
-  z: u32,
-  array_layer_offset: u32,
+  pub x: u32,
+  pub y: u32,
+  pub z: u32,
+  pub array_layer_offset: u32,
 }
 
 // structure.image_extent
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiImageExtent {
-  width: u32,
-  height: u32,
-  depth: u32,
-  array_layer_count: u32,
+  pub width: u32,
+  pub height: u32,
+  pub depth: u32,
+  pub array_layer_count: u32,
 }
 
 // structure.image_allocate_info
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiImageAllocateInfo {
-  dimension: TiImageDimension,
-  extent: TiImageExtent,
-  mip_level_count: u32,
-  format: TiFormat,
-  export_sharing: TiBool,
-  usage: TiImageUsageFlags,
+  pub dimension: TiImageDimension,
+  pub extent: TiImageExtent,
+  pub mip_level_count: u32,
+  pub format: TiFormat,
+  pub export_sharing: TiBool,
+  pub usage: TiImageUsageFlags,
 }
 
 // structure.image_slice
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiImageSlice {
-  image: TiImage,
-  offset: TiImageOffset,
-  extent: TiImageExtent,
-  mip_level: u32,
+  pub image: TiImage,
+  pub offset: TiImageOffset,
+  pub extent: TiImageExtent,
+  pub mip_level: u32,
 }
 
 // enumeration.filter
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiFilter {
   Nearest = 0,
   Linear = 1,
@@ -348,7 +388,7 @@ pub enum TiFilter {
 
 // enumeration.address_mode
 #[repr(u32)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiAddressMode {
   Repeat = 0,
   MirroredRepeat = 1,
@@ -359,47 +399,47 @@ pub enum TiAddressMode {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiSamplerCreateInfo {
-  mag_filter: TiFilter,
-  min_filter: TiFilter,
-  address_mode: TiAddressMode,
-  max_anisotropy: f32,
+  pub mag_filter: TiFilter,
+  pub min_filter: TiFilter,
+  pub address_mode: TiAddressMode,
+  pub max_anisotropy: f32,
 }
 
 // structure.texture
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiTexture {
-  image: TiImage,
-  sampler: TiSampler,
-  dimension: TiImageDimension,
-  extent: TiImageExtent,
-  format: TiFormat,
+  pub image: TiImage,
+  pub sampler: TiSampler,
+  pub dimension: TiImageDimension,
+  pub extent: TiImageExtent,
+  pub format: TiFormat,
 }
 
 // union.argument_value
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union TiArgumentValue {
-  r#i32: i32,
-  r#f32: f32,
-  ndarray: TiNdArray,
-  texture: TiTexture,
+  pub r#i32: i32,
+  pub r#f32: f32,
+  pub ndarray: TiNdArray,
+  pub texture: TiTexture,
 }
 
 // structure.argument
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiArgument {
-  r#type: TiArgumentType,
-  value: TiArgumentValue,
+  pub r#type: TiArgumentType,
+  pub value: TiArgumentValue,
 }
 
 // structure.named_argument
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiNamedArgument {
-  name: *const c_char,
-  argument: TiArgument,
+  pub name: *const c_char,
+  pub argument: TiArgument,
 }
 
 // function.get_last_error

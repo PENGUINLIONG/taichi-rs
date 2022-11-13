@@ -4,8 +4,13 @@ use crate::taichi_core::*;
 
 // handle.native_buffer
 #[repr(transparent)]
-#[derive(Clone, Copy)]
-pub struct TixNativeBufferUnity(usize);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TixNativeBufferUnity(pub usize);
+impl TixNativeBufferUnity {
+    pub fn null() -> Self {
+        TixNativeBufferUnity(0)
+    }
+}
 
 // function.import_native_runtime
 #[link(name = "taichi_c_api")]
