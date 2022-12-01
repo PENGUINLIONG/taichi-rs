@@ -56,7 +56,10 @@ impl Runtime {
     }
 
     pub fn load_aot_module(&self, module_dir: &str) -> Result<AotModule> {
-        AotModule::new(self, module_dir)
+        AotModule::load(self, module_dir)
+    }
+    pub fn create_aot_module(&self, tcm: &[u8]) -> Result<AotModule> {
+        AotModule::new(self, tcm)
     }
 
     pub fn wait(&self) -> Result<()> {
