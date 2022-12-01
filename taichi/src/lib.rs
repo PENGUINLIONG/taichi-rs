@@ -1,4 +1,6 @@
-use taichi_sys::*;
+pub use taichi_sys as sys;
+
+use sys::*;
 
 #[cfg(test)]
 mod tests;
@@ -10,7 +12,7 @@ mod aot_module;
 mod compute_graph;
 
 pub type TaichiResult<T> = std::result::Result<T, TiError>;
-use TaichiResult as Result;
+pub use TaichiResult as Result;
 
 pub use runtime::Runtime;
 pub use memory::Memory;

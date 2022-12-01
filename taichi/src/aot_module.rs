@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, ffi::c_void};
 use std::ffi::CString;
 use taichi_sys::*;
 use crate::{
@@ -12,11 +12,22 @@ struct AotModule_ {
     aot_module: TiAotModule,
 }
 impl AotModule_ {
-    pub fn new(runtime: &Runtime, module_dir: &str) -> Result<AotModule_> {
+    pub fn load(runtime: &Runtime, module_dir: &str) -> Result<AotModule_> {
         let module_dir = CString::new(module_dir)
             .map_err(|_| TiError::InvalidArgument)?;
         let aot_module = unsafe {
             ti_load_aot_module(runtime.runtime(), module_dir.as_ptr())
+        };
+        check_taichi_error()?;
+        let out = AotModule_ {
+            runtime: runtime.clone(),
+            aot_module,
+        };
+        Ok(out)
+    }
+    pub fn new(runtime: &Runtime, tcm: &[u8]) -> Result<AotModule_> {
+        let aot_module = unsafe {
+            ti_create_aot_module(runtime.runtime(), tcm.as_ptr() as *const c_void, tcm.len() as u64)
         };
         check_taichi_error()?;
         let out = AotModule_ {
@@ -39,8 +50,15 @@ pub struct AotModule {
     inner: Rc<AotModule_>,
 }
 impl AotModule {
-    pub fn new(runtime: &Runtime, module_dir: &str) -> Result<AotModule> {
-        let inner = AotModule_::new(runtime, module_dir)?;
+    pub fn load(runtime: &Runtime, module_dir: &str) -> Result<AotModule> {
+        let inner = AotModule_::load(runtime, module_dir)?;
+        let out = AotModule {
+            inner: Rc::new(inner),
+        };
+        Ok(out)
+    }
+    pub fn new(runtime: &Runtime, tcm: &[u8]) -> Result<AotModule> {
+        let inner = AotModule_::new(runtime, tcm)?;
         let out = AotModule {
             inner: Rc::new(inner),
         };

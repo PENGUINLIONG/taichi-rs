@@ -1,4 +1,6 @@
+#[allow(unused_imports)]
 use std::os::raw::{c_void, c_char};
+#[allow(unused_imports)]
 use bitflags::bitflags;
 
 // alias.bool
@@ -100,7 +102,6 @@ impl TiComputeGraph {
 #[repr(i32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiError {
-  Truncated = 1,
   Success = 0,
   NotSupported = -1,
   CorruptedData = -2,
@@ -111,6 +112,7 @@ pub enum TiError {
   ArgumentNotFound = -7,
   InvalidInterop = -8,
   InvalidState = -9,
+  IncompatibleModule = -10,
 }
 
 // enumeration.arch
@@ -136,30 +138,31 @@ pub enum TiArch {
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiCapability {
-  SpirvVersion = 0,
-  SpirvHasInt8 = 1,
-  SpirvHasInt16 = 2,
-  SpirvHasInt64 = 3,
-  SpirvHasFloat16 = 4,
-  SpirvHasFloat64 = 5,
-  SpirvHasAtomicI64 = 6,
-  SpirvHasAtomicFloat16 = 7,
-  SpirvHasAtomicFloat16Add = 8,
-  SpirvHasAtomicFloat16Minmax = 9,
-  SpirvHasAtomicFloat = 10,
-  SpirvHasAtomicFloatAdd = 11,
-  SpirvHasAtomicFloatMinmax = 12,
-  SpirvHasAtomicFloat64 = 13,
-  SpirvHasAtomicFloat64Add = 14,
-  SpirvHasAtomicFloat64Minmax = 15,
-  SpirvHasVariablePtr = 16,
-  SpirvHasPhysicalStorageBuffer = 17,
-  SpirvHasSubgroupBasic = 18,
-  SpirvHasSubgroupVote = 19,
-  SpirvHasSubgroupArithmetic = 20,
-  SpirvHasSubgroupBallot = 21,
-  SpirvHasNonSemanticInfo = 22,
-  SpirvHasNoIntegerWrapDecoration = 23,
+  Reserved = 0,
+  SpirvVersion = 1,
+  SpirvHasInt8 = 2,
+  SpirvHasInt16 = 3,
+  SpirvHasInt64 = 4,
+  SpirvHasFloat16 = 5,
+  SpirvHasFloat64 = 6,
+  SpirvHasAtomicI64 = 7,
+  SpirvHasAtomicFloat16 = 8,
+  SpirvHasAtomicFloat16Add = 9,
+  SpirvHasAtomicFloat16Minmax = 10,
+  SpirvHasAtomicFloat = 11,
+  SpirvHasAtomicFloatAdd = 12,
+  SpirvHasAtomicFloatMinmax = 13,
+  SpirvHasAtomicFloat64 = 14,
+  SpirvHasAtomicFloat64Add = 15,
+  SpirvHasAtomicFloat64Minmax = 16,
+  SpirvHasVariablePtr = 17,
+  SpirvHasPhysicalStorageBuffer = 18,
+  SpirvHasSubgroupBasic = 19,
+  SpirvHasSubgroupVote = 20,
+  SpirvHasSubgroupArithmetic = 21,
+  SpirvHasSubgroupBallot = 22,
+  SpirvHasNonSemanticInfo = 23,
+  SpirvHasNoIntegerWrapDecoration = 24,
 }
 
 // structure.capability_level_info
@@ -202,6 +205,7 @@ pub enum TiArgumentType {
 
 // bit_field.memory_usage
 bitflags! {
+#[repr(transparent)]
 pub struct TiMemoryUsageFlags: u32 {
   const STORAGE_BIT = 1 << 0;
   const UNIFORM_BIT = 1 << 1;
@@ -250,6 +254,7 @@ pub struct TiNdArray {
 
 // bit_field.image_usage
 bitflags! {
+#[repr(transparent)]
 pub struct TiImageUsageFlags: u32 {
   const STORAGE_BIT = 1 << 0;
   const SAMPLED_BIT = 1 << 1;
@@ -442,6 +447,15 @@ pub struct TiNamedArgument {
   pub argument: TiArgument,
 }
 
+// function.get_available_archs
+#[link(name = "taichi_c_api")]
+extern "C" {
+pub fn ti_get_available_archs(
+  arch_count: *mut u32,
+  archs: *mut TiArch
+) -> ();
+}
+
 // function.get_last_error
 #[link(name = "taichi_c_api")]
 extern "C" {
@@ -476,13 +490,13 @@ pub fn ti_destroy_runtime(
 ) -> ();
 }
 
-// function.set_runtime_capabilities
+// function.get_runtime_capabilities
 #[link(name = "taichi_c_api")]
 extern "C" {
-pub fn ti_set_runtime_capabilities_ext(
+pub fn ti_get_runtime_capabilities(
   runtime: TiRuntime,
-  capability_count: u32,
-  capabilities: *const TiCapability
+  capability_count: *mut u32,
+  capabilities: *mut TiCapabilityLevelInfo
 ) -> ();
 }
 
@@ -685,6 +699,16 @@ extern "C" {
 pub fn ti_load_aot_module(
   runtime: TiRuntime,
   module_path: *const c_char
+) -> TiAotModule;
+}
+
+// function.create_aot_module
+#[link(name = "taichi_c_api")]
+extern "C" {
+pub fn ti_create_aot_module(
+  runtime: TiRuntime,
+  tcm: *const c_void,
+  size: u64
 ) -> TiAotModule;
 }
 
