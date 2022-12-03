@@ -5,7 +5,7 @@ use bitflags::bitflags;
 #[allow(unused_imports)]
 use crate::taichi_core::*;
 
-// structure.cuda_memory_interop_info
+/// Structure `TiCudaMemoryInteropInfo`
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiCudaMemoryInteropInfo {
@@ -13,13 +13,13 @@ pub struct TiCudaMemoryInteropInfo {
   pub size: u64,
 }
 
-// function.export_cuda_memory
 #[link(name = "taichi_c_api")]
 extern "C" {
+/// Function `ti_export_cuda_memory`
 pub fn ti_export_cuda_memory(
   runtime: TiRuntime,
   memory: TiMemory,
-  interop_info: *mut TiCudaMemoryInteropInfo
+  interop_info: *mut TiCudaMemoryInteropInfo,
 ) -> ();
 }
 

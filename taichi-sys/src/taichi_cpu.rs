@@ -5,7 +5,7 @@ use bitflags::bitflags;
 #[allow(unused_imports)]
 use crate::taichi_core::*;
 
-// structure.cpu_memory_interop_info
+/// Structure `TiCpuMemoryInteropInfo`
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiCpuMemoryInteropInfo {
@@ -13,13 +13,13 @@ pub struct TiCpuMemoryInteropInfo {
   pub size: u64,
 }
 
-// function.export_cpu_memory
 #[link(name = "taichi_c_api")]
 extern "C" {
+/// Function `ti_export_cpu_memory`
 pub fn ti_export_cpu_memory(
   runtime: TiRuntime,
   memory: TiMemory,
-  interop_info: *mut TiCpuMemoryInteropInfo
+  interop_info: *mut TiCpuMemoryInteropInfo,
 ) -> ();
 }
 
