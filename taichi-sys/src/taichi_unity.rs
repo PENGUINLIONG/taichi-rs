@@ -86,7 +86,6 @@ pub fn tix_submit_async_unity(
 }
 
 pub mod aliases {
-pub use super::TixNativeBufferUnity as xNativeBufferUnity;
 pub use super::tix_import_native_runtime_unity as _import_native_runtime_unity;
 pub use super::tix_launch_kernel_async_unity as _launch_kernel_async_unity;
 pub use super::tix_launch_compute_graph_async_unity as _launch_compute_graph_async_unity;

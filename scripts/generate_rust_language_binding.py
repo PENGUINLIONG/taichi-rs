@@ -53,7 +53,9 @@ def get_declr(x: EntryBase, enum_aliases):
 
     elif ty is Handle:
         ty_name = get_type_name(x)
-        enum_aliases[ty_name[2:]] = ty_name
+        # NOTE: (penguinliong) DO NOT register handle aliases because we write
+        # wrappers for it.
+        #enum_aliases[ty_name[2:]] = ty_name
         return '\n'.join([
             "#[repr(transparent)]",
             "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
@@ -105,7 +107,11 @@ def get_declr(x: EntryBase, enum_aliases):
 
     elif ty is Structure:
         ty_name = get_type_name(x)
-        enum_aliases[ty_name[2:]] = ty_name
+        # NOTE: (penguinliong) DO NOT register structures unless they are
+        # suffixed by `Info`, meaning that they are simple param structs.
+        # Otherwise we should write wrappers for them.
+        if ty_name.endswith("Info"):
+            enum_aliases[ty_name[2:]] = ty_name
         out = [
             "#[repr(C)]",
             "#[derive(Clone, Copy)]",
