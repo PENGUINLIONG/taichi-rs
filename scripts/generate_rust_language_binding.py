@@ -36,19 +36,24 @@ def get_field(x: Field):
         return f"{name}: {type_name}"
 
 
-def get_declr(x: EntryBase):
+def get_declr(x: EntryBase, enum_aliases):
     ty = type(x)
     if ty is BuiltInType:
         return ""
 
     elif ty is Alias:
-        return f"pub type {get_type_name(x)} = {get_type_name(x.alias_of)};"
+        ty_name = get_type_name(x)
+        enum_aliases[ty_name[2:]] = ty_name
+        return f"pub type {ty_name} = {get_type_name(x.alias_of)};"
 
     elif ty is Definition:
-        return f"pub const {x.name.screaming_snake_case}: u32 = {x.value};"
+        name = x.name.screaming_snake_case
+        enum_aliases[name[3:]] = name
+        return f"pub const {name}: u32 = {x.value};"
 
     elif ty is Handle:
         ty_name = get_type_name(x)
+        enum_aliases[ty_name[2:]] = ty_name
         return '\n'.join([
             "#[repr(transparent)]",
             "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
@@ -61,10 +66,12 @@ def get_declr(x: EntryBase):
         ])
 
     elif ty is Enumeration:
+        ty_name = get_type_name(x)
+        enum_aliases[ty_name[2:]] = ty_name
         out = [
             "#[repr(i32)]" if x.name.snake_case == "ti_error" else "#[repr(u32)]",
             "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
-            "pub enum " + get_type_name(x) + " {",
+            "pub enum " + ty_name + " {",
         ]
         for name, value in x.cases.items():
             # Workaround types that start with a number.
@@ -79,11 +86,12 @@ def get_declr(x: EntryBase):
         return '\n'.join(out)
 
     elif ty is BitField:
-        bit_type_name = x.name.extend('flags').upper_camel_case
+        ty_name = x.name.extend('flags').upper_camel_case
+        enum_aliases[ty_name[2:]] = ty_name
         out = [
             "bitflags! {",
             "#[repr(transparent)]",
-            "pub struct " + bit_type_name + ": u32 {"
+            "pub struct " + ty_name + ": u32 {"
         ]
         for name, value in x.bits.items():
             out += [
@@ -96,10 +104,12 @@ def get_declr(x: EntryBase):
         return '\n'.join(out)
 
     elif ty is Structure:
+        ty_name = get_type_name(x)
+        enum_aliases[ty_name[2:]] = ty_name
         out = [
             "#[repr(C)]",
             "#[derive(Clone, Copy)]",
-            "pub struct " + get_type_name(x) + " {"
+            "pub struct " + ty_name + " {"
         ]
         for field in x.fields:
             out += [f"  pub {get_field(field)},"]
@@ -107,10 +117,12 @@ def get_declr(x: EntryBase):
         return '\n'.join(out)
 
     elif ty is Union:
+        ty_name = get_type_name(x)
+        enum_aliases[ty_name[2:]] = ty_name
         out = [
             "#[repr(C)]",
             "#[derive(Clone, Copy)]",
-            "pub union " + get_type_name(x) + " {"
+            "pub union " + ty_name + " {"
         ]
         for variant in x.variants:
             out += [f"  pub {get_field(variant)},"]
@@ -118,6 +130,8 @@ def get_declr(x: EntryBase):
         return '\n'.join(out)
 
     elif ty is Function:
+        fn_name = x.name.snake_case
+        enum_aliases[fn_name[3:]] = fn_name
         return_value_type = "()" if x.return_value_type == None else get_type_name(
             x.return_value_type)
         out = [
@@ -182,14 +196,26 @@ def print_module_header(module):
             f"use crate::{module_name}::*;",
         ]
 
+    enum_aliases = {}
     for x in module.declr_reg:
         out += [
             "",
             f"// {x}",
-            get_declr(module.declr_reg.resolve(x)),
+            get_declr(module.declr_reg.resolve(x), enum_aliases),
         ]
 
-    out += [""]
+    out += [
+        "",
+        "pub mod aliases {",
+    ]
+
+    for name, target in enum_aliases.items():
+        out += [f"pub use super::{target} as {name};"]
+
+    out += [
+        "}",
+        ""
+    ]
 
     return '\n'.join(out)
 

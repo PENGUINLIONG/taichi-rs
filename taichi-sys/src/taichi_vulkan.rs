@@ -16,3 +16,7 @@ pub fn ti_create_vulkan_runtime_ext(
   device_extensions: *const *const c_char
 ) -> TiRuntime;
 }
+
+pub mod aliases {
+pub use super::ti_create_vulkan_runtime_ext as create_vulkan_runtime_ext;
+}
