@@ -1,9 +1,9 @@
-mod taichi_core;
-mod taichi_cpu;
-mod taichi_cuda;
-mod taichi_opengl;
-mod taichi_unity;
-mod taichi_vulkan;
+pub mod taichi_core;
+pub mod taichi_cpu;
+pub mod taichi_cuda;
+pub mod taichi_opengl;
+pub mod taichi_unity;
+pub mod taichi_vulkan;
 
 pub use taichi_core::*;
 pub use taichi_cpu::*;

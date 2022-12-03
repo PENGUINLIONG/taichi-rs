@@ -22,3 +22,8 @@ pub fn ti_export_cuda_memory(
   interop_info: *mut TiCudaMemoryInteropInfo
 ) -> ();
 }
+
+pub mod aliases {
+pub use super::TiCudaMemoryInteropInfo as CudaMemoryInteropInfo;
+pub use super::ti_export_cuda_memory as export_cuda_memory;
+}

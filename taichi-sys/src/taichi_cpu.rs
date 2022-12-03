@@ -22,3 +22,8 @@ pub fn ti_export_cpu_memory(
   interop_info: *mut TiCpuMemoryInteropInfo
 ) -> ();
 }
+
+pub mod aliases {
+pub use super::TiCpuMemoryInteropInfo as CpuMemoryInteropInfo;
+pub use super::ti_export_cpu_memory as export_cpu_memory;
+}

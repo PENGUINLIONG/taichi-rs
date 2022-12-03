@@ -84,3 +84,13 @@ pub fn tix_submit_async_unity(
   runtime: TiRuntime
 ) -> *mut c_void;
 }
+
+pub mod aliases {
+pub use super::tix_import_native_runtime_unity as _import_native_runtime_unity;
+pub use super::tix_launch_kernel_async_unity as _launch_kernel_async_unity;
+pub use super::tix_launch_compute_graph_async_unity as _launch_compute_graph_async_unity;
+pub use super::tix_copy_memory_to_native_buffer_async_unity as _copy_memory_to_native_buffer_async_unity;
+pub use super::tix_copy_memory_device_to_host_unity as _copy_memory_device_to_host_unity;
+pub use super::tix_copy_memory_host_to_device_unity as _copy_memory_host_to_device_unity;
+pub use super::tix_submit_async_unity as _submit_async_unity;
+}

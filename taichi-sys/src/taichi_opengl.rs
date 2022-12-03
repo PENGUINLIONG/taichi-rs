@@ -4,3 +4,6 @@ use std::os::raw::{c_void, c_char};
 use bitflags::bitflags;
 #[allow(unused_imports)]
 use crate::taichi_core::*;
+
+pub mod aliases {
+}
