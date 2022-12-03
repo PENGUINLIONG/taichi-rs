@@ -1,7 +1,7 @@
 [package]
 name = "taichi-runtime" # Should be `taichi` but it's been occupied.
 authors = ["PENGUINLIONG <admin@penguinliong.moe>"]
-version = "0.0.6+1.3.0"
+version = "0.0.7+1.3.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Rust language binding to the Taichi Runtime C-API."
@@ -10,4 +10,4 @@ description = "Rust language binding to the Taichi Runtime C-API."
 
 [dependencies]
 bitflags = "1.3"
-taichi-sys = { version = "0.0.7", path = "../taichi-sys" }
+taichi-sys = { version = "0.0.8", path = "../taichi-sys" }

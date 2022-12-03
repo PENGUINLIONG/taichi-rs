@@ -424,10 +424,10 @@ pub enum TiArgumentType {
   Texture = 3,
 }
 
+bitflags! {
 /// BitField `TiMemoryUsageFlags`
 /// 
 /// Usages of a memory allocation. Taichi requires kernel argument memories to be allocated with `TI_MEMORY_USAGE_STORAGE_BIT`.
-bitflags! {
 #[repr(transparent)]
 pub struct TiMemoryUsageFlags: u32 {
   /// The memory can be read/write accessed by any kernel.
@@ -501,10 +501,10 @@ pub struct TiNdArray {
   pub elem_type: TiDataType,
 }
 
+bitflags! {
 /// BitField `TiImageUsageFlags`
 /// 
 /// Usages of an image allocation. Taichi requires kernel argument images to be allocated with `TI_IMAGE_USAGE_STORAGE_BIT` and `TI_IMAGE_USAGE_SAMPLED_BIT`.
-bitflags! {
 #[repr(transparent)]
 pub struct TiImageUsageFlags: u32 {
   /// The image can be read/write accessed by any kernel.

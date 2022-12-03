@@ -100,12 +100,12 @@ def get_declr(module: Module, x: EntryBase, enum_aliases, with_docs=True):
         out += ["}"]
 
     elif ty is BitField:
-        if with_docs:
-            out += get_api_ref(module, x)
         ty_name = x.name.extend('flags').upper_camel_case
         enum_aliases[ty_name[2:]] = ty_name
+        out += ["bitflags! {"]
+        if with_docs:
+            out += get_api_ref(module, x)
         out += [
-            "bitflags! {",
             "#[repr(transparent)]",
             "pub struct " + ty_name + ": u32 {"
         ]
