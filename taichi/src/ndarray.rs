@@ -33,6 +33,10 @@ impl<'a, T> NdArrayBuilder<'a, T> {
         self.memory_builder.host_write(value);
         self
     }
+    pub fn host_access(&mut self, value: bool) -> &mut Self {
+        self.host_read(value)
+            .host_write(value)
+    }
     pub fn usage(&mut self, usage: TiMemoryUsageFlags) -> &mut Self {
         self.memory_builder.usage(usage);
         self
@@ -146,6 +150,14 @@ impl<T> NdArray<T> {
         self.memory.write(src)
     }
 
+    pub fn to_vec<U: Clone + Default>(&self) -> Result<Vec<U>> {
+        let n = self.memory.size() as usize / std::mem::size_of::<U>();
+        let mut out = Vec::new();
+        out.resize(n, U::default());
+        self.read(&mut out)?;
+        Ok(out)
+    }
+
     pub fn memory(&self) -> &Memory {
         &self.memory
     }
@@ -156,6 +168,22 @@ impl<T> NdArray<T> {
     pub fn elem_shape(&self) -> &[u32] {
         let n = self.ndarray.elem_shape.dim_count as usize;
         &self.ndarray.elem_shape.dims[..n]
+    }
+    pub fn elem_count(&self) -> usize {
+        let mut elem_count: usize = 1;
+        let shape = &self.ndarray.shape;
+        for i in shape.dims[..shape.dim_count as usize].iter() {
+            elem_count *= *i as usize;
+        }
+        elem_count
+    }
+    pub fn scalar_count(&self) -> usize {
+        let mut scalar_count: usize = self.elem_count();
+        let elem_shape = &self.ndarray.elem_shape;
+        for i in elem_shape.dims[..elem_shape.dim_count as usize].iter() {
+            scalar_count *= *i as usize;
+        }
+        scalar_count
     }
     pub fn elem_type(&self) -> TiDataType {
         self.ndarray.elem_type
