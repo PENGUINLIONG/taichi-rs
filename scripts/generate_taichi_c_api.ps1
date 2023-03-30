@@ -7,6 +7,6 @@ if (-not(Test-Path $TAICHI_REPO_DIR)) {
 
 Copy-Item "scripts/generate_rust_language_binding.py" "$TAICHI_REPO_DIR/misc/generate_rust_language_binding.py"
 Push-Location $TAICHI_REPO_DIR
-python ./misc/generate_rust_language_binding.py
+& python3 ./misc/generate_rust_language_binding.py
 Pop-Location
 Copy-Item $TAICHI_REPO_DIR/c_api/rust/*.rs "taichi-sys/src"

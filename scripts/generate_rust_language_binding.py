@@ -68,7 +68,7 @@ def get_declr(module: Module, x: EntryBase, enum_aliases, with_docs=True):
         #enum_aliases[ty_name[2:]] = ty_name
         out += [
             "#[repr(transparent)]",
-            "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
+            "#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]",
             f"pub struct {ty_name}(pub usize);",
             f"impl {ty_name} {{",
             "    pub fn null() -> Self {",
@@ -84,7 +84,7 @@ def get_declr(module: Module, x: EntryBase, enum_aliases, with_docs=True):
         enum_aliases[ty_name[2:]] = ty_name
         out += [
             "#[repr(i32)]" if x.name.snake_case == "ti_error" else "#[repr(u32)]",
-            "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
+            "#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]",
             "pub enum " + ty_name + " {",
         ]
         for name, value in x.cases.items():

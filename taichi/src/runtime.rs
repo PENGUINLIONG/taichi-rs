@@ -1,10 +1,10 @@
 use std::rc::Rc;
 use taichi_sys::*;
 use crate::{
-    check_taichi_error, TaichiResult as Result,
+    get_last_error, Result,
     aot_module::AotModule,
     memory::MemoryBuilder,
-    ndarray::NdArrayBuilder,
+    ndarray::NdArrayBuilder, image::ImageBuilder, texture::TextureBuilder,
 };
 
 struct Runtime_ {
@@ -16,7 +16,7 @@ impl Runtime_ {
         let runtime = unsafe {
             ti_create_runtime(arch, device_index)
         };
-        check_taichi_error()?;
+        get_last_error()?;
         Ok(Runtime_ { arch, runtime })
     }
 }
@@ -58,6 +58,13 @@ impl Runtime {
         NdArrayBuilder::<T>::new(self)
     }
 
+    pub fn allocate_image(&self) -> ImageBuilder<'_> {
+        ImageBuilder::new(self)
+    }
+    pub fn allocate_texture<T>(&self) -> TextureBuilder<'_> {
+        TextureBuilder::new(self)
+    }
+
     pub fn load_aot_module(&self, module_dir: &str) -> Result<AotModule> {
         AotModule::load(self, module_dir)
     }
@@ -69,7 +76,7 @@ impl Runtime {
         unsafe {
             ti_wait(self.runtime());
         }
-        check_taichi_error()?;
+        get_last_error()?;
         Ok(())
     }
 

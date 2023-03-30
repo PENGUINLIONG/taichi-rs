@@ -1,9 +1,7 @@
 use std::rc::Rc;
-use taichi_sys::*;
-use crate::{
-    check_taichi_error, TaichiResult as Result,
-    runtime::Runtime,
-};
+use taichi_sys::{TiMemoryAllocateInfo, TI_FALSE, TiMemoryUsageFlags, TI_TRUE, TiMemory, ti_allocate_memory, ti_free_memory, TiRuntime, ti_map_memory, ti_unmap_memory};
+
+use crate::{get_last_error, Error, Result, Runtime};
 
 pub struct MemoryBuilder<'a> {
     runtime: &'a Runtime,
@@ -63,7 +61,7 @@ impl Memory_ {
         let memory = unsafe {
             ti_allocate_memory(runtime.runtime(), allocate_info)
         };
-        check_taichi_error()?;
+        get_last_error()?;
         let out = Memory_ {
             runtime: runtime.clone(),
             memory,
@@ -99,7 +97,7 @@ impl Memory {
 
     pub fn read<T: Clone>(&self, dst: &mut [T]) -> Result<()> {
         if !self.host_read() {
-            return Err(TiError::InvalidState);
+            return Err(Error::InvalidState("attempting to map non-host-readable memory"));
         }
         let mapped = MappedMemory::new(self)?;
         let len = self.size() as usize / std::mem::size_of::<T>();
@@ -112,7 +110,7 @@ impl Memory {
     }
     pub fn write<T: Clone>(&self, src: &[T]) -> Result<()> {
         if !self.host_write() {
-            return Err(TiError::InvalidState);
+            return Err(Error::InvalidState("attempting to map non-host-writable memory"));
         }
         let mapped = MappedMemory::<T>::new(self)?;
         let len = self.size() / std::mem::size_of::<T>();
@@ -145,7 +143,6 @@ impl Memory {
     }
 }
 
-#[derive(Clone)]
 pub struct MappedMemory<'a, T>(&'a Memory, *mut T);
 impl<'a, T> MappedMemory<'a, T> {
     pub fn new(memory: &'a Memory) -> Result<Self> {
@@ -153,7 +150,7 @@ impl<'a, T> MappedMemory<'a, T> {
         let mapped = unsafe {
             ti_map_memory(memory.runtime(), memory.memory()) as *mut T
         };
-        check_taichi_error()?;
+        get_last_error()?;
         Ok(MappedMemory(memory, mapped))
     }
 

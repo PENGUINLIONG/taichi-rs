@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use taichi_sys::*;
 use crate::{
-    TaichiResult as Result,
+    Result,
     runtime::{Runtime},
     memory::{MappedMemory, Memory, MemoryBuilder},
 };
@@ -12,7 +12,7 @@ pub struct NdArrayBuilder<'a, T> {
     phantom: PhantomData<T>,
 }
 impl<'a, T> NdArrayBuilder<'a, T> {
-    pub fn new(runtime: &'a Runtime) -> NdArrayBuilder<'a, T> {
+    pub fn new(runtime: &'a Runtime) -> Self {
         NdArrayBuilder {
             memory_builder: runtime.allocate_memory(),
             ndarray: TiNdArray {

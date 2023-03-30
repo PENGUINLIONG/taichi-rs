@@ -221,7 +221,7 @@ pub const TI_NULL_HANDLE: u32 = 0;
 /// 
 /// Taichi runtime represents an instance of a logical backend and its internal dynamic state. The user is responsible to synchronize any use of [`TiRuntime`](#handle-tiruntime). The user *must not* manipulate multiple [`TiRuntime`](#handle-tiruntime)s in the same thread.
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TiRuntime(pub usize);
 impl TiRuntime {
     pub fn null() -> Self {
@@ -233,7 +233,7 @@ impl TiRuntime {
 /// 
 /// An ahead-of-time (AOT) compiled Taichi module, which contains a collection of kernels and compute graphs.
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TiAotModule(pub usize);
 impl TiAotModule {
     pub fn null() -> Self {
@@ -245,7 +245,7 @@ impl TiAotModule {
 /// 
 /// A contiguous allocation of device memory.
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TiMemory(pub usize);
 impl TiMemory {
     pub fn null() -> Self {
@@ -257,7 +257,7 @@ impl TiMemory {
 /// 
 /// A contiguous allocation of device image.
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TiImage(pub usize);
 impl TiImage {
     pub fn null() -> Self {
@@ -269,7 +269,7 @@ impl TiImage {
 /// 
 /// An image sampler. [`TI_NULL_HANDLE`](#definition-ti_null_handle) represents a default image sampler provided by the runtime implementation. The filter modes and address modes of default samplers depend on backend implementation.
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TiSampler(pub usize);
 impl TiSampler {
     pub fn null() -> Self {
@@ -281,7 +281,7 @@ impl TiSampler {
 /// 
 /// A Taichi kernel that can be launched on the offload target for execution.
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TiKernel(pub usize);
 impl TiKernel {
     pub fn null() -> Self {
@@ -293,7 +293,7 @@ impl TiKernel {
 /// 
 /// A collection of Taichi kernels (a compute graph) to launch on the offload target in a predefined order.
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TiComputeGraph(pub usize);
 impl TiComputeGraph {
     pub fn null() -> Self {
@@ -305,7 +305,7 @@ impl TiComputeGraph {
 /// 
 /// Errors reported by the Taichi C-API.
 #[repr(i32)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TiError {
   Success = 0,
   NotSupported = -1,
@@ -325,7 +325,7 @@ pub enum TiError {
 /// 
 /// Types of backend archs.
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TiArch {
   Reserved = 0,
   Vulkan = 1,
@@ -341,7 +341,7 @@ pub enum TiArch {
 /// 
 /// Device capabilities.
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TiCapability {
   Reserved = 0,
   SpirvVersion = 1,
@@ -384,7 +384,7 @@ pub struct TiCapabilityLevelInfo {
 /// 
 /// Elementary (primitive) data types. There might be vendor-specific constraints on the available data types so it's recommended to use 32-bit data types if multi-platform distribution is desired.
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TiDataType {
   F16 = 0,
   F32 = 1,
@@ -406,7 +406,7 @@ pub enum TiDataType {
 /// 
 /// Types of kernel and compute graph argument.
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TiArgumentType {
   I32 = 0,
   F32 = 1,
@@ -511,7 +511,7 @@ pub struct TiImageUsageFlags: u32 {
 /// 
 /// Dimensions of an image allocation.
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TiImageDimension {
   /// The image is 1-dimensional.
   D1D = 0,
@@ -528,7 +528,7 @@ pub enum TiImageDimension {
 
 /// Enumeration `TiImageLayout`
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TiImageLayout {
   Undefined = 0,
   ShaderRead = 1,
@@ -547,7 +547,7 @@ pub enum TiImageLayout {
 /// 
 /// Texture formats. The availability of texture formats depends on runtime support.
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TiFormat {
   Unknown = 0,
   R8 = 1,
@@ -665,7 +665,7 @@ pub struct TiImageSlice {
 
 /// Enumeration `TiFilter`
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TiFilter {
   Nearest = 0,
   Linear = 1,
@@ -673,7 +673,7 @@ pub enum TiFilter {
 
 /// Enumeration `TiAddressMode`
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TiAddressMode {
   Repeat = 0,
   MirroredRepeat = 1,
