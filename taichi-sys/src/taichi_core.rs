@@ -6,14 +6,15 @@
 /// 
 /// Taichi C-API intends to support the following backends:
 /// 
-/// |Backend     |Offload Target   |Maintenance Tier |
-/// |------------|-----------------|-----------------|
-/// |Vulkan      |GPU              |Tier 1           |
-/// |CUDA (LLVM) |GPU (NVIDIA)     |Tier 1           |
-/// |CPU (LLVM)  |CPU              |Tier 1           |
-/// |OpenGL      |GPU              |Tier 2           |
-/// |DirectX 11  |GPU (Windows)    |N/A              |
-/// |Metal       |GPU (macOS, iOS) |N/A              |
+/// |Backend     |Offload Target   |Maintenance Tier | Stabilized? |
+/// |------------|-----------------|-----------------|-------------|
+/// |Vulkan      |GPU              |Tier 1           | Yes         |
+/// |Metal       |GPU (macOS, iOS) |Tier 2           | No          |
+/// |CUDA (LLVM) |GPU (NVIDIA)     |Tier 2           | No          |
+/// |CPU (LLVM)  |CPU              |Tier 2           | No          |
+/// |OpenGL      |GPU              |Tier 2           | No          |
+/// |OpenGL ES   |GPU              |Tier 2           | No          |
+/// |DirectX 11  |GPU (Windows)    |N/A              | No          |
 /// 
 /// The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first because it has the most outstanding cross-platform compatibility among all the tier-1 backends.
 /// For the backends with tier-2 support, you should expect a delay in the fixes to minor issues.
@@ -31,7 +32,8 @@
 /// You *must* create a runtime instance before working with Taichi, and *only* one runtime per thread. Currently, we do not officially claim that multiple runtime instances can coexist in a process, but please feel free to [file an issue with us](https://github.com/taichi-dev/taichi/issues) if you run into any problem with runtime instance coexistence.
 /// 
 /// ```cpp
-/// TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
+/// // Create a Taichi Runtime on Vulkan device at index 0.
+/// TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN, 0);
 /// ```
 /// 
 /// When your program runs to the end, ensure that:
@@ -110,9 +112,9 @@
 /// TiAotModule aot_module = ti_load_aot_module(runtime, "/path/to/aot/module");
 /// ```
 /// 
-/// `/path/to/aot/module` should point to the directory that contains a `metadata.tcb`.
+/// `/path/to/aot/module` should point to the directory that contains a `metadata.json`.
 /// 
-/// You can destroy an unused AOT module, but please ensure that there is no kernel or compute graph related to it pending to [`ti_submit`](#function-ti_submit).
+/// You can destroy an unused AOT module, but please ensure that there is no kernel or compute graph related to it pending to [`ti_flush`](#function-ti_flush).
 /// 
 /// ```cpp
 /// ti_destroy_aot_module(aot_module);
@@ -173,10 +175,10 @@
 /// ti_launch_compute_graph(runtime, compute_graph, named_args.size(), named_args.data());
 /// ```
 /// 
-/// When you have launched all kernels and compute graphs for this batch, you should [`ti_submit`](#function-ti_submit) and [`ti_wait`](#function-ti_wait) for the execution to finish.
+/// When you have launched all kernels and compute graphs for this batch, you should [`ti_flush`](#function-ti_flush) and [`ti_wait`](#function-ti_wait) for the execution to finish.
 /// 
 /// ```cpp
-/// ti_submit(runtime);
+/// ti_flush(runtime);
 /// ti_wait(runtime);
 /// ```
 /// 
@@ -236,18 +238,6 @@ pub struct TiAotModule(pub usize);
 impl TiAotModule {
     pub fn null() -> Self {
         TiAotModule(0)
-    }
-}
-
-/// Handle `TiEvent`
-/// 
-/// A synchronization primitive to manage device execution flows in multiple queues.
-#[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct TiEvent(pub usize);
-impl TiEvent {
-    pub fn null() -> Self {
-        TiEvent(0)
     }
 }
 
@@ -328,6 +318,7 @@ pub enum TiError {
   InvalidInterop = -8,
   InvalidState = -9,
   IncompatibleModule = -10,
+  OutOfMemory = -11,
 }
 
 /// Enumeration `TiArch`
@@ -336,22 +327,19 @@ pub enum TiError {
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiArch {
-  X64 = 0,
-  Arm64 = 1,
-  Js = 2,
-  Cc = 3,
-  Wasm = 4,
-  Cuda = 5,
-  Metal = 6,
-  Opengl = 7,
-  Dx11 = 8,
-  Dx12 = 9,
-  Opencl = 10,
-  Amdgpu = 11,
-  Vulkan = 12,
+  Reserved = 0,
+  Vulkan = 1,
+  Metal = 2,
+  Cuda = 3,
+  X64 = 4,
+  Arm64 = 5,
+  Opengl = 6,
+  Gles = 7,
 }
 
 /// Enumeration `TiCapability`
+/// 
+/// Device capabilities.
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiCapability {
@@ -362,7 +350,7 @@ pub enum TiCapability {
   SpirvHasInt64 = 4,
   SpirvHasFloat16 = 5,
   SpirvHasFloat64 = 6,
-  SpirvHasAtomicI64 = 7,
+  SpirvHasAtomicInt64 = 7,
   SpirvHasAtomicFloat16 = 8,
   SpirvHasAtomicFloat16Add = 9,
   SpirvHasAtomicFloat16Minmax = 10,
@@ -383,6 +371,8 @@ pub enum TiCapability {
 }
 
 /// Structure `TiCapabilityLevelInfo`
+/// 
+/// An integral device capability level. It currently is not guaranteed that a higher level value is compatible with a lower level value.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TiCapabilityLevelInfo {
@@ -422,6 +412,7 @@ pub enum TiArgumentType {
   F32 = 1,
   Ndarray = 2,
   Texture = 3,
+  Scalar = 4,
 }
 
 bitflags! {
@@ -553,6 +544,8 @@ pub enum TiImageLayout {
 }
 
 /// Enumeration `TiFormat`
+/// 
+/// Texture formats. The availability of texture formats depends on runtime support.
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TiFormat {
@@ -717,15 +710,40 @@ pub struct TiTexture {
 
 #[repr(C)]
 #[derive(Clone, Copy)]
+pub union TiScalarValue {
+  /// Scalar value that fits into 8 bits.
+  pub x8: u8,
+  /// Scalar value that fits into 16 bits.
+  pub x16: u16,
+  /// Scalar value that fits into 32 bits.
+  pub x32: u32,
+  /// Scalar value that fits into 64 bits.
+  pub x64: u64,
+}
+
+/// Structure `TiScalar`
+/// 
+/// A typed scalar value.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct TiScalar {
+  pub r#type: TiDataType,
+  pub value: TiScalarValue,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
 pub union TiArgumentValue {
-  /// Value of a 32-bit one's complement signed integer.
+  /// Value of a 32-bit one's complement signed integer. This is equivalent to `union.scalar_value.x32` with `enumeration.data_type.i32`.
   pub r#i32: i32,
-  /// Value of a 32-bit IEEE 754 single-precision floating-poing number.
+  /// Value of a 32-bit IEEE 754 single-precision floating-poing number. This is equivalent to `union.scalar_value.x32` with `enumeration.data_type.f32`.
   pub r#f32: f32,
   /// An ND-array to be bound.
   pub ndarray: TiNdArray,
   /// A texture to be bound.
   pub texture: TiTexture,
+  /// An scalar to be bound.
+  pub scalar: TiScalar,
 }
 
 /// Structure `TiArgument`
@@ -754,6 +772,15 @@ pub struct TiNamedArgument {
 
 #[link(name = "taichi_c_api")]
 extern "C" {
+/// Function `ti_get_version`
+/// 
+/// Get the current taichi version. It has the same value as `TI_C_API_VERSION` as defined in `taichi_core.h`.
+pub fn ti_get_version(
+) -> u32;
+}
+
+#[link(name = "taichi_c_api")]
+extern "C" {
 /// Function `ti_get_available_archs`
 /// 
 /// Gets a list of available archs on the current platform. An arch is only available if:
@@ -762,6 +789,8 @@ extern "C" {
 /// 2. The current platform is installed with a capable hardware or an emulation software.
 /// 
 /// An available arch has at least one device available, i.e., device index 0 is always available. If an arch is not available on the current platform, a call to [`ti_create_runtime`](#function-ti_create_runtime) with that arch is guaranteed failing.
+/// 
+/// **WARNING** Please also note that the order or returned archs is *undefined*.
 pub fn ti_get_available_archs(
   arch_count: *mut u32,
   archs: *mut TiArch,
@@ -778,7 +807,7 @@ extern "C" {
 /// - `message_size`: Size of textual error message in `function.get_last_error.message`
 /// - `message`: Text buffer for the textual error message. Ignored when `message_size` is 0.
 pub fn ti_get_last_error(
-  message_size: u64,
+  message_size: *mut u64,
   message: *mut c_char,
 ) -> TiError;
 }
@@ -803,8 +832,13 @@ extern "C" {
 /// Function `ti_create_runtime`
 /// 
 /// Creates a Taichi Runtime with the specified [`TiArch`](#enumeration-tiarch).
+///
+/// Parameters:
+/// - `arch`: Arch of Taichi Runtime.
+/// - `device_index`: The index of device in `function.create_runtime.arch` to create Taichi Runtime on.
 pub fn ti_create_runtime(
   arch: TiArch,
+  device_index: u32,
 ) -> TiRuntime;
 }
 
@@ -820,7 +854,25 @@ pub fn ti_destroy_runtime(
 
 #[link(name = "taichi_c_api")]
 extern "C" {
+/// Function `ti_set_runtime_capabilities_ext`
+/// 
+/// Force override the list of available capabilities in the runtime instance.
+pub fn ti_set_runtime_capabilities_ext(
+  runtime: TiRuntime,
+  capability_count: u32,
+  capabilities: *const TiCapabilityLevelInfo,
+) -> ();
+}
+
+#[link(name = "taichi_c_api")]
+extern "C" {
 /// Function `ti_get_runtime_capabilities`
+/// 
+/// Gets all capabilities available on the runtime instance.
+///
+/// Parameters:
+/// - `capability_count`: The total number of capabilities available.
+/// - `capabilities`: Returned capabilities.
 pub fn ti_get_runtime_capabilities(
   runtime: TiRuntime,
   capability_count: *mut u32,
@@ -914,26 +966,6 @@ pub fn ti_destroy_sampler(
 
 #[link(name = "taichi_c_api")]
 extern "C" {
-/// Function `ti_create_event`
-/// 
-/// Creates an event primitive.
-pub fn ti_create_event(
-  runtime: TiRuntime,
-) -> TiEvent;
-}
-
-#[link(name = "taichi_c_api")]
-extern "C" {
-/// Function `ti_destroy_event`
-/// 
-/// Destroys an event primitive.
-pub fn ti_destroy_event(
-  event: TiEvent,
-) -> ();
-}
-
-#[link(name = "taichi_c_api")]
-extern "C" {
 /// Function `ti_copy_memory_device_to_device` (Device Command)
 /// 
 /// Copies the data in a contiguous subsection of the device memory to another subsection. The two subsections *must not* overlap.
@@ -1008,43 +1040,10 @@ pub fn ti_launch_compute_graph(
 
 #[link(name = "taichi_c_api")]
 extern "C" {
-/// Function `ti_signal_event` (Device Command)
-/// 
-/// Sets an event primitive to a signaled state so that the queues waiting for it can go on execution. If the event has been signaled, you *must* call [`ti_reset_event`](#function-ti_reset_event-device-command) to reset it; otherwise, an undefined behavior would occur.
-pub fn ti_signal_event(
-  runtime: TiRuntime,
-  event: TiEvent,
-) -> ();
-}
-
-#[link(name = "taichi_c_api")]
-extern "C" {
-/// Function `ti_reset_event` (Device Command)
-/// 
-/// Sets a signaled event primitive back to an unsignaled state.
-pub fn ti_reset_event(
-  runtime: TiRuntime,
-  event: TiEvent,
-) -> ();
-}
-
-#[link(name = "taichi_c_api")]
-extern "C" {
-/// Function `ti_wait_event` (Device Command)
-/// 
-/// Waits until an event primitive transitions to a signaled state. The awaited event *must* be signaled by an external procedure or a previous invocation to [`ti_reset_event`](#function-ti_reset_event-device-command); otherwise, an undefined behavior would occur.
-pub fn ti_wait_event(
-  runtime: TiRuntime,
-  event: TiEvent,
-) -> ();
-}
-
-#[link(name = "taichi_c_api")]
-extern "C" {
-/// Function `ti_submit`
+/// Function `ti_flush`
 /// 
 /// Submits all previously invoked device commands to the offload device for execution.
-pub fn ti_submit(
+pub fn ti_flush(
   runtime: TiRuntime,
 ) -> ();
 }
@@ -1074,6 +1073,9 @@ pub fn ti_load_aot_module(
 #[link(name = "taichi_c_api")]
 extern "C" {
 /// Function `ti_create_aot_module`
+/// 
+/// Creates a pre-compiled AOT module from TCM data.
+/// Returns [`TI_NULL_HANDLE`](#definition-ti_null_handle) if the runtime fails to create the AOT module from TCM data.
 pub fn ti_create_aot_module(
   runtime: TiRuntime,
   tcm: *const c_void,
@@ -1137,12 +1139,15 @@ pub use super::TiImageAllocateInfo as ImageAllocateInfo;
 pub use super::TiFilter as Filter;
 pub use super::TiAddressMode as AddressMode;
 pub use super::TiSamplerCreateInfo as SamplerCreateInfo;
+pub use super::TiScalarValue as ScalarValue;
 pub use super::TiArgumentValue as ArgumentValue;
+pub use super::ti_get_version as get_version;
 pub use super::ti_get_available_archs as get_available_archs;
 pub use super::ti_get_last_error as get_last_error;
 pub use super::ti_set_last_error as set_last_error;
 pub use super::ti_create_runtime as create_runtime;
 pub use super::ti_destroy_runtime as destroy_runtime;
+pub use super::ti_set_runtime_capabilities_ext as set_runtime_capabilities_ext;
 pub use super::ti_get_runtime_capabilities as get_runtime_capabilities;
 pub use super::ti_allocate_memory as allocate_memory;
 pub use super::ti_free_memory as free_memory;
@@ -1152,18 +1157,13 @@ pub use super::ti_allocate_image as allocate_image;
 pub use super::ti_free_image as free_image;
 pub use super::ti_create_sampler as create_sampler;
 pub use super::ti_destroy_sampler as destroy_sampler;
-pub use super::ti_create_event as create_event;
-pub use super::ti_destroy_event as destroy_event;
 pub use super::ti_copy_memory_device_to_device as copy_memory_device_to_device;
 pub use super::ti_copy_image_device_to_device as copy_image_device_to_device;
 pub use super::ti_track_image_ext as track_image_ext;
 pub use super::ti_transition_image as transition_image;
 pub use super::ti_launch_kernel as launch_kernel;
 pub use super::ti_launch_compute_graph as launch_compute_graph;
-pub use super::ti_signal_event as signal_event;
-pub use super::ti_reset_event as reset_event;
-pub use super::ti_wait_event as wait_event;
-pub use super::ti_submit as submit;
+pub use super::ti_flush as flush;
 pub use super::ti_wait as wait;
 pub use super::ti_load_aot_module as load_aot_module;
 pub use super::ti_create_aot_module as create_aot_module;

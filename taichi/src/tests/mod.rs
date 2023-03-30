@@ -1,13 +1,21 @@
 use taichi_sys::*;
 use crate::*;
 
+fn get_platform_arch() -> TiArch {
+    if cfg!(target_os = "macos") {
+        TiArch::Metal
+    } else {
+        TiArch::Vulkan
+    }
+}
+
 #[test]
 fn test_create_runtime() {
-    Runtime::new(TiArch::Vulkan).unwrap();
+    Runtime::new(get_platform_arch()).unwrap();
 }
 #[test]
 fn test_host_accessible_memory_read_write() {
-    let runtime = Runtime::new(TiArch::Vulkan).unwrap();
+    let runtime = Runtime::new(get_platform_arch()).unwrap();
     let memory = runtime.allocate_memory()
         .size(128 * std::mem::size_of::<u32>())
         .host_read(true)
@@ -23,7 +31,7 @@ fn test_host_accessible_memory_read_write() {
 }
 #[test]
 fn test_host_accessible_ndarray_read_write() {
-    let runtime = Runtime::new(TiArch::Vulkan).unwrap();
+    let runtime = Runtime::new(get_platform_arch()).unwrap();
     let ndarray = runtime.allocate_ndarray::<u32>()
         .shape([128, ])
         .host_read(true)
@@ -39,12 +47,12 @@ fn test_host_accessible_ndarray_read_write() {
 }
 #[test]
 fn test_load_aot_module() {
-    let runtime = Runtime::new(TiArch::Vulkan).unwrap();
+    let runtime = Runtime::new(get_platform_arch()).unwrap();
     runtime.load_aot_module("../assets/chess_board/module").unwrap();
 }
 #[test]
 fn test_launch_compute_graph() {
-    let runtime = Runtime::new(TiArch::Vulkan).unwrap();
+    let runtime = Runtime::new(get_platform_arch()).unwrap();
     let ndarray = runtime.allocate_ndarray::<i32>()
         .shape([16, 16])
         .host_read(true)

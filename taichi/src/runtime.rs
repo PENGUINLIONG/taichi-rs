@@ -12,9 +12,9 @@ struct Runtime_ {
     runtime: TiRuntime,
 }
 impl Runtime_ {
-    fn new(arch: TiArch) -> Result<Self> {
+    fn new(arch: TiArch, device_index: u32) -> Result<Self> {
         let runtime = unsafe {
-            ti_create_runtime(arch)
+            ti_create_runtime(arch, device_index)
         };
         check_taichi_error()?;
         Ok(Runtime_ { arch, runtime })
@@ -34,7 +34,10 @@ pub struct Runtime {
 }
 impl Runtime {
     pub fn new(arch: TiArch) -> Result<Self> {
-        let inner = Runtime_::new(arch)?;
+        return Self::with_device_index(arch, 0);
+    }
+    pub fn with_device_index(arch: TiArch, device_index: u32) -> Result<Self> {
+        let inner = Runtime_::new(arch, device_index)?;
         let out = Runtime {
             inner: Rc::new(inner),
         };

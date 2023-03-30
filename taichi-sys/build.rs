@@ -1,4 +1,4 @@
-use std::{env, fs, path};
+use std::{env, fs, path, process, io::{BufReader, Read}};
 use dotenvy::dotenv;
 
 pub fn is_docs_rs() -> bool {
@@ -11,8 +11,30 @@ pub fn target_os() -> String {
     env::var("CARGO_CFG_TARGET_OS").unwrap()
 }
 pub fn taichi_c_api_install_dir() -> String {
-    env::var("TAICHI_C_API_INSTALL_DIR")
-        .expect("'TAICHI_C_API_INSTALL_DIR' is not specified")
+    fn from_env() -> Option<String> {
+        env::var("TAICHI_C_API_INSTALL_DIR").ok()
+    }
+    fn from_wheel() -> Option<String> {
+        let mut cmd = process::Command::new("python3")
+            .args(["-c", "import sys; import pathlib; print([pathlib.Path(x + '/taichi/_lib/c_api').resolve() for x in sys.path if pathlib.Path(x + '/taichi/_lib/c_api').exists()][0], end='')"])
+            .spawn()
+            .ok()?;
+
+        let exit = cmd.wait().ok()?;
+        if !exit.success() {
+            return None;
+        }
+        if let Some(stdout) = cmd.stdout {
+            let mut reader = BufReader::new(stdout);
+            let mut buf = String::new();
+            reader.read_to_string(&mut buf).ok()?;
+            Some(buf.to_owned())
+        } else {
+            None
+        }
+    }
+    from_env().or_else(from_wheel)
+        .expect("Cannot infer 'TAICHI_C_API_INSTALL_DIR'")
 }
 
 fn proc_taichi_c_api() -> Option<String> {

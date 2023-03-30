@@ -12,7 +12,7 @@ def compile_graph_aot(arch):
         return
 
     @ti.kernel
-    def chess_board(arr: ti.types.ndarray(field_dim=2)):
+    def chess_board(arr: ti.types.ndarray(ti.i32, ndim=2)):
         for i, j in arr:
             value = ti.cast((j * (WIDTH + 1) + i) % 2, ti.i32)
             arr[i, j] = value
@@ -30,7 +30,7 @@ def compile_graph_aot(arch):
 
     mod = ti.aot.Module(arch)
     mod.add_graph('g_run', run_graph)
-    mod.save("assets/chess_board/module", '')
+    mod.save("assets/chess_board/module")
 
 
 if __name__ == "__main__":
@@ -40,5 +40,7 @@ if __name__ == "__main__":
 
     if args.arch == "vulkan":
         compile_graph_aot(arch=ti.vulkan)
+    elif args.arch == "metal":
+        compile_graph_aot(arch=ti.metal)
     else:
         assert False

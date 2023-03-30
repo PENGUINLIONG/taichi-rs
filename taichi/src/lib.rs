@@ -1,10 +1,5 @@
 pub use taichi_sys::{
     taichi_core::aliases::*,
-    taichi_cpu::aliases::*,
-    taichi_cuda::aliases::*,
-    taichi_opengl::aliases::*,
-    taichi_unity::aliases::*,
-    taichi_vulkan::aliases::*,
 };
 
 #[cfg(test)]
@@ -27,7 +22,8 @@ pub use compute_graph::ComputeGraph;
 
 fn check_taichi_error() -> Result<()> {
     let err = unsafe {
-        get_last_error(0, std::ptr::null_mut())
+        let mut msg_size: u64 = 0;
+        get_last_error(&mut msg_size as *mut u64, std::ptr::null_mut())
     };
     if err == Error::Success {
         Ok(())

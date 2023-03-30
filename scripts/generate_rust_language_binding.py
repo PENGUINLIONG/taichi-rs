@@ -1,17 +1,16 @@
-from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
-                         Enumeration, Field, Function, Handle, Module,
-                         Structure, Union)
+from taichi_json import (Alias, BitField, BuiltInType, Callback, Definition,
+                         EntryBase, Enumeration, Field, Function, Handle,
+                         Module, Structure, Union)
 import pathlib
 import re
 
 
 def get_type_name(x: EntryBase):
-    ty = type(x)
-    if ty in [BuiltInType]:
+    if isinstance(x, BuiltInType):
         return x.type_name
-    elif ty in [Alias, Handle, Enumeration, Structure, Union]:
+    elif isinstance(x, (Alias, Callback, Handle, Enumeration, Structure, Union)):
         return x.name.upper_camel_case
-    elif ty in [BitField]:
+    elif isinstance(x, (BitField)):
         return x.name.extend('flags').upper_camel_case
     else:
         raise RuntimeError(f"'{x.id}' is not a type")
@@ -40,25 +39,27 @@ def get_field(x: Field):
 def get_declr(module: Module, x: EntryBase, enum_aliases, with_docs=True):
     out = []
 
-    ty = type(x)
-    if ty is BuiltInType:
+    if isinstance(x, BuiltInType):
         out += [""]
 
-    elif ty is Alias:
+    elif isinstance(x, Alias):
         if with_docs:
             out += get_api_ref(module, x)
         ty_name = get_type_name(x)
         enum_aliases[ty_name[2:]] = ty_name
         out += [f"pub type {ty_name} = {get_type_name(x.alias_of)};"]
 
-    elif ty is Definition:
+    elif isinstance(x, Callback):
+        pass
+
+    elif isinstance(x, Definition):
         if with_docs:
             out += get_api_ref(module, x)
         name = x.name.screaming_snake_case
         enum_aliases[name[3:]] = name
         out += [f"pub const {name}: u32 = {x.value};"]
 
-    elif ty is Handle:
+    elif isinstance(x, Handle):
         if with_docs:
             out += get_api_ref(module, x)
         ty_name = get_type_name(x)
@@ -76,7 +77,7 @@ def get_declr(module: Module, x: EntryBase, enum_aliases, with_docs=True):
             "}",
         ]
 
-    elif ty is Enumeration:
+    elif isinstance(x, Enumeration):
         if with_docs:
             out += get_api_ref(module, x)
         ty_name = get_type_name(x)
@@ -91,7 +92,7 @@ def get_declr(module: Module, x: EntryBase, enum_aliases, with_docs=True):
             if name.screaming_snake_case[0].isdigit():
                 if x.name.upper_camel_case == "TiImageDimension":
                     if with_docs:
-                        out += get_api_field_ref(module, x, name)
+                        out += get_api_field_ref(module, x, str(name))
                     out += [f"  D{name.upper_camel_case} = {value},"]
                 else:
                     raise RuntimeError("dont know how to workaround a enum case that starts with a number")
@@ -99,7 +100,7 @@ def get_declr(module: Module, x: EntryBase, enum_aliases, with_docs=True):
                 out += [f"  {name.upper_camel_case} = {value},"]
         out += ["}"]
 
-    elif ty is BitField:
+    elif isinstance(x, BitField):
         ty_name = x.name.extend('flags').upper_camel_case
         enum_aliases[ty_name[2:]] = ty_name
         out += ["bitflags! {"]
@@ -111,7 +112,7 @@ def get_declr(module: Module, x: EntryBase, enum_aliases, with_docs=True):
         ]
         for name, value in x.bits.items():
             if with_docs:
-                out += get_api_field_ref(module, x, name)
+                out += get_api_field_ref(module, x, str(name))
             out += [
                 f"  const {name.extend('bit').screaming_snake_case} = 1 << {value};"
             ]
@@ -120,7 +121,7 @@ def get_declr(module: Module, x: EntryBase, enum_aliases, with_docs=True):
             "}",
         ]
 
-    elif ty is Structure:
+    elif isinstance(x, Structure):
         if with_docs:
             out += get_api_ref(module, x)
         ty_name = get_type_name(x)
@@ -141,7 +142,7 @@ def get_declr(module: Module, x: EntryBase, enum_aliases, with_docs=True):
         out += ["}"]
         return '\n'.join(out)
 
-    elif ty is Union:
+    elif isinstance(x, Union):
         if with_docs:
             out += get_api_ref(module, x)
         ty_name = get_type_name(x)
@@ -158,7 +159,7 @@ def get_declr(module: Module, x: EntryBase, enum_aliases, with_docs=True):
         out += ["}"]
         return '\n'.join(out)
 
-    elif ty is Function:
+    elif isinstance(x, Function):
         fn_name = x.name.snake_case
         enum_aliases[fn_name[3:]] = fn_name
         return_value_type = "()" if x.return_value_type == None else get_type_name(
@@ -198,20 +199,19 @@ def get_declr(module: Module, x: EntryBase, enum_aliases, with_docs=True):
 
 
 def get_human_readable_name(x: EntryBase):
-    ty = type(x)
-    if ty is BuiltInType:
+    if isinstance(x, BuiltInType):
         return ""
 
-    elif ty is Alias:
+    elif isinstance(x, Alias):
         return f"{get_type_name(x)}"
 
-    elif ty is Definition:
+    elif isinstance(x, Definition):
         return f"{x.name.screaming_snake_case}"
 
     elif isinstance(x, (Handle, Enumeration, BitField, Structure, Union)):
         return f"{get_type_name(x)}"
 
-    elif ty is Function:
+    elif isinstance(x, Function):
         return f"{x.name.snake_case}"
 
     else:
@@ -240,27 +240,6 @@ def get_api_fn_param_ref(module: Module, x: EntryBase, field_sym: str) -> list:
     if module.doc and field_sym2 in module.doc.api_field_refs:
         return [f"/// - `{field_sym}`: {module.doc.api_field_refs[field_sym2]}"]
     return []
-
-
-def get_human_readable_name(x: EntryBase):
-    ty = type(x)
-    if ty is BuiltInType:
-        return ""
-
-    elif ty is Alias:
-        return f"{get_type_name(x)}"
-
-    elif ty is Definition:
-        return f"{x.name.screaming_snake_case}"
-
-    elif isinstance(x, (Handle, Enumeration, BitField, Structure, Union)):
-        return f"{get_type_name(x)}"
-
-    elif ty is Function:
-        return f"{x.name.snake_case}"
-
-    else:
-        raise RuntimeError(f"'{x.id}' doesn't have a human readable name")
 
 
 def get_title(x: EntryBase):
@@ -431,6 +410,11 @@ if __name__ == "__main__":
         BuiltInType("int64_t", "i64"),
         BuiltInType("uint32_t", "u32"),
         BuiltInType("int32_t", "i32"),
+        BuiltInType("uint16_t", "u16"),
+        BuiltInType("int16_t", "i16"),
+        BuiltInType("uint8_t", "u8"),
+        BuiltInType("int8_t", "i8"),
+        BuiltInType("double", "f64"),
         BuiltInType("float", "f32"),
         BuiltInType("const char*", "*const c_char"),
         BuiltInType("const char**", "*const *const c_char"),
