@@ -372,6 +372,7 @@ def print_module_header(module):
             get_declr(module, module.declr_reg.resolve(x), enum_aliases),
         ]
 
+    """
     out += [
         "",
         "pub mod aliases {",
@@ -383,6 +384,10 @@ def print_module_header(module):
     out += [
         "}",
         ""
+    ]
+    """
+    out += [
+        "",
     ]
 
     return '\n'.join(out)

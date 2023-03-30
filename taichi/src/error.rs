@@ -1,4 +1,4 @@
-use std::ffi::c_char;
+use std::ffi::{c_char, CString};
 
 use taichi_sys::{TiError, ti_get_last_error, ti_set_last_error};
 
@@ -103,8 +103,11 @@ pub fn get_last_error() -> TaichiResult<()> {
     }
 }
 
-pub fn set_last_error(error: TaichiError) {
+pub fn set_last_error(error: TaichiError) -> TaichiResult<()> {
+    let message = CString::new(error.message())
+        .map_err(|_| TaichiError::InvalidArgument("error message contains null character"))?;
     unsafe {
-        ti_set_last_error(error.code(), error.message().as_ptr() as *const c_char);
+        ti_set_last_error(error.code(), message.as_ptr());
     }
+    Ok(())
 }
