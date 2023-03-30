@@ -1,6 +1,6 @@
 use std::ffi::c_char;
 
-use taichi_sys::{TiError, ti_get_last_error};
+use taichi_sys::{TiError, ti_get_last_error, ti_set_last_error};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TaichiError {
@@ -100,5 +100,11 @@ pub fn get_last_error() -> TaichiResult<()> {
         } else {
             Err(TaichiError::new(error, String::new()))
         }
+    }
+}
+
+pub fn set_last_error(error: TaichiError) {
+    unsafe {
+        ti_set_last_error(error.code(), error.message().as_ptr() as *const c_char);
     }
 }

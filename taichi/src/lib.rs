@@ -12,7 +12,7 @@ mod aot_module;
 mod compute_graph;
 
 pub use version::{get_version, Version};
-pub use error::{get_last_error, TaichiError as Error, TaichiResult as Result};
+pub use error::{get_last_error, set_last_error, TaichiError as Error, TaichiResult as Result};
 pub use runtime::Runtime;
 pub use memory::Memory;
 pub use ndarray::NdArray;
